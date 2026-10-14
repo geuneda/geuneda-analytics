@@ -4,6 +4,13 @@
 이 형식은 [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](http://semver.org/spec/v2.0.0.html)을 따릅니다.
 
+## [0.2.0] - 2026-10-15
+
+**New**:
+- 표준 이벤트 계약: `AnalyticsStandardEvents`(`purchase`, `ad_impression`), `AnalyticsStandardParameters`(Firebase 권장 이름), `AnalyticsPurchase`(상품 ID, 단가, 통화, 수량, 거래 ID, 상품 이름, `Value` = 단가 × 수량), `AnalyticsAdImpression`(플랫폼, 네트워크, 형식, 광고 단위, 수익, 통화, 위치). 통화는 ISO 4217 영문 3자(대문자로 저장), 단가 × 수량이 유한해야 함, 오용은 예외
+- 기록 `IAnalyticsService.LogPurchase`/`LogAdImpression`(확장 메서드, 추가 파라미터 가능, 표준 이름과 겹치면 예외), 어댑터용 읽기 `AnalyticsPurchase.TryRead`/`AnalyticsAdImpression.TryRead`, `IsStandardParameter`
+- 벤더 어댑터 패키지: `com.geuneda.analytics.firebase`, `com.geuneda.analytics.airbridge`, `com.geuneda.analytics.appsflyer`, `com.geuneda.analytics.facebook`(각 0.1.0)
+
 ## [0.1.0] - 2026-10-14
 
 **New**:

@@ -10,6 +10,7 @@
 | 맥락 | `IAnalyticsClock`(시각), `IAnalyticsSessionSource`(세션 ID) |
 | 자사 수집(http 가 있을 때) | `Geuneda.Analytics.Collector.CollectorSink`, `CollectorSinkOptions` |
 | 세션 연동(account 가 있을 때) | `Geuneda.Analytics.Account.AppSessionAnalytics` |
+| 표준 이벤트 | `AnalyticsStandardEvents`, `AnalyticsStandardParameters`, `AnalyticsPurchase`, `AnalyticsAdImpression`, `LogPurchase`·`LogAdImpression` 확장 메서드 |
 | 배치 형식 | `AnalyticsWire`(저장 파일과 수집 요청이 같은 JSON) |
 | 수집 서버(`Server~`) | `AddGeunedaAnalytics`, `MapGeunedaAnalytics`, `IAnalyticsEventStore`, `InMemoryAnalyticsEventStore`, `CollectedEvent` |
 
@@ -36,7 +37,16 @@
 | `com.geuneda.http` 0.1.0 이상 | `Geuneda.Analytics.Collector` | 자사 수집 서버로 배치 POST 하는 `CollectorSink` |
 | `com.geuneda.account` 0.1.0 이상 | `Geuneda.Analytics.Account` | 세션 ID 와 세션 이벤트(`AppSessionAnalytics`) |
 
-벤더 SDK 어댑터는 SDK 를 쓰는 게임만 설치하도록 별도 패키지입니다(결정 D3): `com.geuneda.analytics.firebase`, `com.geuneda.analytics.airbridge`, `com.geuneda.analytics.appsflyer`, `com.geuneda.analytics.facebook`.
+벤더 SDK 어댑터는 SDK 를 쓰는 게임만 설치하도록 별도 패키지입니다(결정 D3). 각 README 에 설치와 변환 규칙이 있습니다.
+
+| 패키지 | sink | 준비 | 표준 이벤트 변환 |
+|---|---|---|---|
+| `com.geuneda.analytics.firebase` | `FirebaseAnalyticsSink` | `MarkReady()` | `purchase`(상품 목록), `ad_impression` |
+| `com.geuneda.analytics.airbridge` | `AirbridgeAnalyticsSink` | 항상 | 주문 완료, 광고 노출(AppLovin 파트너 상세) |
+| `com.geuneda.analytics.appsflyer` | `AppsFlyerAnalyticsSink` | `MarkReady()` | `af_purchase`, `logAdRevenue` |
+| `com.geuneda.analytics.facebook` | `FacebookAnalyticsSink` | `FB.IsInitialized` | `FB.LogPurchase`, `AdImpression` |
+
+어댑터 패키지는 SDK 가 없으면 컴파일되지 않으므로 SDK 를 쓰는 게임만 설치합니다. define `GEUNEDA_SKIP_VENDOR_ADAPTERS` 가 있으면 어댑터를 컴파일하지 않습니다(SDK 가 없는 geuneda-frameworks 호스트용).
 
 ## 사용 예
 
@@ -112,6 +122,26 @@ analytics.LogEvent("ad_reward", parameters, AnalyticsSinks.Collector | Analytics
 | `SessionId` | `IAnalyticsSessionSource` |
 | `UserId`, `UserProperties` | `SetUserId`, `SetUserProperty` |
 | `App` | 설치 ID(`IAppIdentity`), 앱 버전, 플랫폼(`android`, `ios`, `editor` 등), 환경(`AppEnv.Name`), 기기 모델, OS |
+
+## 표준 이벤트
+
+구매와 광고 노출 수익은 표준 이벤트로 기록합니다. 어댑터가 벤더 표준 이벤트(Firebase `purchase`, Airbridge 주문 완료, AppsFlyer `af_purchase`, Meta `LogPurchase` 등)로 바꾸고, 자사 수집·콘솔에는 그대로 갑니다.
+
+```csharp
+// 스토어 결제가 확정되고 서버가 지급한 뒤 한 번
+analytics.LogPurchase(new AnalyticsPurchase("gem_100", 1.99, "USD", quantity: 1, transactionId: receipt.TransactionId),
+    new Dictionary<string, object> { { "player_level", level } });
+
+// 미디에이션 SDK 의 노출 수익 콜백마다. MAX 는 수익을 모르면 Revenue 가 -1 이므로 기록하지 않습니다
+if (adInfo.Revenue >= 0)
+{
+    analytics.LogAdImpression(new AnalyticsAdImpression("AppLovin", adInfo.NetworkName, "rewarded", adInfo.AdUnitIdentifier, adInfo.Revenue, "USD", "shop"));
+}
+```
+
+- 이벤트 이름은 `purchase`, `ad_impression` 이고 파라미터 이름은 `AnalyticsStandardParameters`(Firebase 권장 이름: `product_id`, `price`, `quantity`, `value`, `currency`, `transaction_id`, `ad_platform`, `ad_source`, `ad_format`, `ad_unit_name`, `ad_placement`)입니다. 구매의 `value` 는 단가 × 수량입니다.
+- 통화는 ISO 4217 영문 3자(대문자로 저장)입니다. 빈 상품 ID·플랫폼, 음수·NaN 금액, 단가 × 수량이 무한대가 되는 값, 1 미만 수량, 잘못된 통화는 예외입니다. 추가 파라미터가 표준 이름과 겹쳐도 예외입니다.
+- 어댑터는 `AnalyticsPurchase.TryRead`/`AnalyticsAdImpression.TryRead` 로 읽고, 표준이 아닌 파라미터(`IsStandardParameter` 가 false)는 함께 보냅니다. 게임별 예외는 각 어댑터 옵션의 `HandleEvent` 로 직접 보냅니다.
 
 ## sink 와 재전송
 
