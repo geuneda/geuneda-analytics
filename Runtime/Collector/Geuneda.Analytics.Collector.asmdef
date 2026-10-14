@@ -1,0 +1,27 @@
+{
+    "name": "Geuneda.Analytics.Collector",
+    "rootNamespace": "Geuneda.Analytics.Collector",
+    "references": [
+        "Geuneda.Analytics",
+        "Geuneda.Core",
+        "Geuneda.Http",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "GEUNEDA_ANALYTICS_HTTP"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.geuneda.http",
+            "expression": "0.1.0",
+            "define": "GEUNEDA_ANALYTICS_HTTP"
+        }
+    ],
+    "noEngineReferences": false
+}

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- 메모리 저장소를 쓰는 샘플 수집 서버. Unity 상호 운용 테스트(Tests/EditMode/Collector/SampleServerInteropTest)가 이 서버에 붙는다 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Geuneda.Analytics.SampleServer</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Geuneda.Analytics.Server/Geuneda.Analytics.Server.csproj" />
+  </ItemGroup>
+</Project>

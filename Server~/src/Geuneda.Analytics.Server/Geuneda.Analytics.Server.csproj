@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ASP.NET Core 이벤트 수집 서버 라이브러리. 배치 형식 상수는 Unity 패키지(Runtime/Protocol)의 것을 링크해 한 곳에서 관리한다 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Geuneda.Analytics.Server</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Geuneda.Analytics.Server.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup Label="Unity 패키지와 공유">
+    <Compile Include="$(AnalyticsRuntimeDir)Protocol/*.cs" LinkBase="Shared/Protocol" />
+  </ItemGroup>
+</Project>

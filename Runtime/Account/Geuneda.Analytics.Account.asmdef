@@ -1,0 +1,25 @@
+{
+    "name": "Geuneda.Analytics.Account",
+    "rootNamespace": "Geuneda.Analytics.Account",
+    "references": [
+        "Geuneda.Analytics",
+        "Geuneda.Account"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "GEUNEDA_ANALYTICS_ACCOUNT"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.geuneda.account",
+            "expression": "0.1.0",
+            "define": "GEUNEDA_ANALYTICS_ACCOUNT"
+        }
+    ],
+    "noEngineReferences": false
+}

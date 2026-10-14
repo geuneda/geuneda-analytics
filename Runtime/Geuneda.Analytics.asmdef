@@ -1,0 +1,17 @@
+{
+    "name": "Geuneda.Analytics",
+    "rootNamespace": "Geuneda.Analytics",
+    "references": [
+        "Geuneda.Core",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
