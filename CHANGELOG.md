@@ -4,6 +4,11 @@
 이 형식은 [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](http://semver.org/spec/v2.0.0.html)을 따릅니다.
 
+## [0.2.1] - 2026-10-17
+
+**Fixed**:
+- account 0.3.0 에서 `IAppSession` 이 `IDisposable` 을 상속해, account 연동 테스트(`Tests/EditMode/Account`)의 가짜 세션이 컴파일되지 않던 문제. 런타임 코드는 바뀌지 않았습니다
+
 ## [0.2.0] - 2026-10-15
 
 **New**:

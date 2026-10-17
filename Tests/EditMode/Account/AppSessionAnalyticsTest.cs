@@ -148,6 +148,10 @@ namespace Geuneda.Analytics.Account.Tests
 			public event Action<SessionInfo> Resumed;
 			public event Action<SessionInfo, SessionEndReason> Ended;
 
+			public void Dispose()
+			{
+			}
+
 			public int HandlerCount => (Started?.GetInvocationList().Length ?? 0) + (Paused?.GetInvocationList().Length ?? 0) +
 			                           (Resumed?.GetInvocationList().Length ?? 0) + (Ended?.GetInvocationList().Length ?? 0);
 
