@@ -4,6 +4,11 @@
 이 형식은 [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](http://semver.org/spec/v2.0.0.html)을 따릅니다.
 
+## [0.2.2] - 2026-11-03
+
+**Changed**:
+- sink 깨우기(준비 확인, 배치 대기, 백오프)가 깨울 때마다 `CancellationTokenSource` 를 만들지 않습니다. 취소 토큰 없이 기다리고 세대 번호로 밀려난 깨우기를 버립니다. 준비되지 않은 sink 가 1초마다 할당하던 것이 없어집니다. 닫은 뒤에도 남은 대기는 끝날 때까지 돌다가 아무것도 하지 않습니다
+
 ## [0.2.1] - 2026-10-17
 
 **Fixed**:

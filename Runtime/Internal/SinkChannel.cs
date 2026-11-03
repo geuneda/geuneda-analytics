@@ -52,8 +52,11 @@ namespace Geuneda.Analytics
 		private string _inFlightFile;
 		private int _failures;
 		private TimeSpan _retryAt;
-		private CancellationTokenSource _wake;
+		private bool _wakePending;
+		private int _wakeGeneration;
 		private TimeSpan _wakeAt;
+		private bool _wakeWanted;
+		private TimeSpan _wantedWakeAt;
 		private bool _suspended;
 		private bool _closed;
 		private TimeSpan _diskRetryAt;
@@ -228,6 +231,7 @@ namespace Geuneda.Analytics
 				_running = false;
 				_inFlight = null;
 				_inFlightFile = null;
+				ArmWake();
 			}
 		}
 
@@ -496,50 +500,65 @@ namespace Geuneda.Analytics
 			_dropWarningAt = now + DropWarningInterval;
 		}
 
+		/// <summary>이번 전송 루프가 끝날 때 깨울 시각을 정합니다(가장 이른 것만 남음). 실제 대기는 <see cref="ArmWake"/> 가 하나만 겁니다.</summary>
 		private void ScheduleWake(TimeSpan delay)
 		{
-			if (_closed)
+			var at = _clock.Elapsed + delay;
+
+			if (!_wakeWanted || at < _wantedWakeAt)
+			{
+				_wakeWanted = true;
+				_wantedWakeAt = at;
+			}
+		}
+
+		/// <remarks>
+		/// 대기는 취소할 수 없어 끝날 때까지 남습니다. 한 루프에서 정한 시각 중 가장 이른 것 하나만 걸고,
+		/// 이미 건 대기가 그보다 이르면 새로 걸지 않아 남는 대기가 쌓이지 않습니다.
+		/// </remarks>
+		private void ArmWake()
+		{
+			if (!_wakeWanted || _closed)
+			{
+				_wakeWanted = false;
+				return;
+			}
+
+			_wakeWanted = false;
+			var at = _wantedWakeAt;
+
+			if (_wakePending && _wakeAt <= at)
 			{
 				return;
 			}
 
-			var at = _clock.Elapsed + delay;
-
-			if (_wake != null)
-			{
-				if (_wakeAt <= at)
-				{
-					return;
-				}
-
-				_wake.Cancel();
-			}
-
-			var wake = new CancellationTokenSource();
-			_wake = wake;
+			_wakePending = true;
 			_wakeAt = at;
-			WakeAsync(delay, wake).Forget();
+			var delay = at - _clock.Elapsed;
+			WakeAsync(delay > TimeSpan.Zero ? delay : TimeSpan.Zero, ++_wakeGeneration).Forget();
 		}
 
 		private void CancelWake()
 		{
-			var wake = _wake;
-			_wake = null;
-			wake?.Cancel();
+			_wakeWanted = false;
+			_wakePending = false;
+			_wakeGeneration++;
 		}
 
-		private async UniTaskVoid WakeAsync(TimeSpan delay, CancellationTokenSource wake)
+		/// <remarks>
+		/// 취소 토큰 없이 기다리고 세대 번호로 밀려난 깨우기를 버립니다. 토큰(새 CTS 나 등록)은 깨울 때마다 할당하는데,
+		/// 준비되지 않은 sink 는 <see cref="ReadinessPollInterval"/> 마다 깨우므로 그 할당이 계속 쌓입니다.
+		/// </remarks>
+		private async UniTaskVoid WakeAsync(TimeSpan delay, int generation)
 		{
-			if (await _delay(delay, wake.Token).SuppressCancellationThrow())
+			await _delay(delay, CancellationToken.None);
+
+			if (generation != _wakeGeneration)
 			{
 				return;
 			}
 
-			if (_wake == wake)
-			{
-				_wake = null;
-			}
-
+			_wakePending = false;
 			Pump();
 		}
 	}

@@ -548,7 +548,10 @@ namespace Geuneda.Analytics.Tests
 			Assert.IsTrue(sending.LastToken.IsCancellationRequested);
 			Assert.AreEqual(1, TestStorage.Files(_directory, AnalyticsSinks.Collector).Length, "cancelled in-flight batch is kept");
 			Assert.AreEqual(1, TestStorage.Files(_directory, AnalyticsSinks.Firebase).Length);
-			Assert.AreEqual(0, _delay.PendingCount, "readiness poll is cancelled");
+			var requested = _delay.Requested.Count;
+			_delay.CompleteAll();
+			Assert.AreEqual(0, waiting.Batches.Count, "a readiness poll left from before Dispose does nothing");
+			Assert.AreEqual(requested, _delay.Requested.Count, "and schedules no further poll");
 			Assert.Throws<ObjectDisposedException>(() => service.LogEvent("late"));
 			Assert.Throws<ObjectDisposedException>(() => service.AddSink(new RecordingSink(AnalyticsSinks.Console)));
 			service.Dispose();
@@ -675,6 +678,8 @@ namespace Geuneda.Analytics.Tests
 			service.LogEvent("stored");
 			service.HandlePause(true);
 			service.Dispose();
+			// Dispose 전에 걸린 준비 확인 대기는 남아 있다가 아무것도 하지 않고 끝난다
+			_delay.CompleteAll();
 
 			var listingFails = true;
 			var fileSystem = new FaultyFileSystem
@@ -733,6 +738,31 @@ namespace Geuneda.Analytics.Tests
 			_delay.CompleteAll();
 
 			CollectionAssert.AreEqual(new[] { "live", "stored" }, nextSink.Events.Select(e => e.Name));
+		}
+
+		[Test]
+		public void ReadinessPollsDuringListingBackoff_KeepOneWaitAtATime()
+		{
+			var fileSystem = new FaultyFileSystem
+			{
+				FailGetFiles = (_, pattern) => pattern == "*.json" ? new IOException("busy") : null
+			};
+			var service = Create(fileSystem: fileSystem);
+			var sink = new RecordingSink(AnalyticsSinks.Firebase) { IsReady = false };
+			service.AddSink(sink);
+			service.LogEvent("live");
+			// 이벤트가 오기 전에 건 저장소 재시도 대기는 준비 확인에 밀려 한 번 남는다
+			_monotonic.Advance(SinkChannel.ReadinessPollInterval);
+			_delay.CompleteAll();
+
+			// 대기는 취소되지 않으므로, 깨울 때마다 저장소 재시도 대기까지 새로 걸면 그만큼 쌓인다
+			for (var i = 0; i < 3; i++)
+			{
+				Assert.IsTrue(service.Channels[0].IsStoreBackingOff);
+				Assert.AreEqual(1, _delay.PendingCount);
+				_monotonic.Advance(SinkChannel.ReadinessPollInterval);
+				_delay.CompleteAll();
+			}
 		}
 
 		[Test]
@@ -897,7 +927,9 @@ namespace Geuneda.Analytics.Tests
 
 			Assert.AreEqual(1, TestStorage.Files(_directory, AnalyticsSinks.Collector).Length);
 			Assert.AreEqual(1, TestStorage.Files(_directory, AnalyticsSinks.Firebase).Length);
-			Assert.AreEqual(0, _delay.PendingCount);
+			var requested = _delay.Requested.Count;
+			_delay.CompleteAll();
+			Assert.AreEqual(requested, _delay.Requested.Count, "the readiness poll left from before Dispose schedules nothing");
 		}
 
 		[Test]
